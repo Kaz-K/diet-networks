@@ -2,11 +2,11 @@
   "run": {
     "seed": false,
     "n_epochs": 500,
-    "visible_devices": "0"
+    "visible_devices": "0",
+    "transposed_matrix": "overall"
   },
   "save": {
-    "output_root_dir": "./result",
-    "log_iter_interval": 10
+    "output_root_dir": "./result"
   },
   "dataset": {
     "data_path": "./data/data_integration_counts_most_common.csv",

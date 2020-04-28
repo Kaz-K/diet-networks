@@ -13,6 +13,15 @@ def get_model(model_config):
             use_reconstruction=model_config.use_reconstruction,
         )
 
+    elif model_config.model_name == 'ModifiedMLP':
+        model = MLP(
+            input_size=model_config.input_size,
+            hidden_size=model_config.hidden_size,
+            output_size=model_config.output_size,
+            use_dropout=model_config.use_dropout,
+            use_reconstruction=model_config.use_reconstruction,
+        )
+
     elif model_config.model_name == 'DietNetworks':
         model = DietNetworks(
             input_size=model_config.input_size,

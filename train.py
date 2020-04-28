@@ -84,9 +84,19 @@ def main(config, needs_save, study_name):
         x = batch['data'].float().cuda(non_blocking=True)
         y = batch['label'].long().cuda(non_blocking=True)
 
+        if config.run.transposed_matrix == 'overall':
+            x_t = data_train
+        elif config.run.transposed_matrix == 'batch':
+            x_t = torch.t(x)
+
         def closure():
             optimizer.zero_grad()
-            out, x_hat = model(x, data_train)
+
+            if 'MLP' in config.model.model_name:
+                out, x_hat = model(x)
+            else:
+                out, x_hat = model(x, x_t)
+
             loss = criterion(out, y)
             loss.backward()
             return loss, out
@@ -102,7 +112,36 @@ def main(config, needs_save, study_name):
 
         return metrics
 
+    def inference(engine, batch):
+        model.eval()
+
+        x = batch['data'].float().cuda(non_blocking=True)
+        y = batch['label'].long().cuda(non_blocking=True)
+
+        if config.run.transposed_matrix == 'overall':
+            x_t = data_train
+        elif config.run.transposed_matrix == 'batch':
+            x_t = torch.t(x)
+
+        with torch.no_grad():
+            if 'MLP' in config.model.model_name:
+                out, x_hat = model(x)
+            else:
+                out, x_hat = model(x, x_t)
+
+            loss = criterion(out, y)
+
+        metrics = calc_metrics(out, y)
+        metrics.update({
+            'loss': loss.item(),
+        })
+
+        torch.cuda.synchronize()
+
+        return metrics
+
     trainer = Engine(update)
+    evaluator = Engine(inference)
     timer = Timer(average=True)
 
     monitoring_metrics = ['loss', 'accuracy']
@@ -113,32 +152,42 @@ def main(config, needs_save, study_name):
             output_transform=partial(lambda x, metric: x[metric], metric=metric)
         ).attach(trainer, metric)
 
+    for metric in monitoring_metrics:
+        RunningAverage(
+            alpha=0.98,
+            output_transform=partial(lambda x, metric: x[metric], metric=metric)
+        ).attach(evaluator, metric)
+
     pbar = ProgressBar()
     pbar.attach(trainer, metric_names=monitoring_metrics)
+    pbar.attach(evaluator, metric_names=monitoring_metrics)
 
     @trainer.on(Events.EPOCH_COMPLETED)
+    def switch_training_to_evaluation(engine):
+        evaluator.run(test_data_loader, max_epochs=1)
+
+    @evaluator.on(Events.EPOCH_COMPLETED)
+    def show_logs(engine):
+        columns = ['epoch', 'iteration'] + list(engine.state.metrics.keys())
+        values = [str(engine.state.epoch), str(engine.state.iteration)] \
+               + [str(value) for value in engine.state.metrics.values()]
+
+        message = '[{epoch}/{max_epoch}][{i}/{max_i}]'.format(epoch=engine.state.epoch,
+                                                              max_epoch=config.run.n_epochs,
+                                                              i=engine.state.iteration,
+                                                              max_i=len(train_data_loader))
+
+        for name, value in zip(columns, values):
+            message += ' | {name}: {value}'.format(name=name, value=value)
+
+        pbar.log_message(message)
+
+    @evaluator.on(Events.EPOCH_COMPLETED)
     def print_times(engine):
         pbar.log_message('Epoch {} done. Time per batch: {:.3f}[s]'.format(
             engine.state.epoch, timer.value())
         )
         timer.reset()
-
-    @trainer.on(Events.ITERATION_COMPLETED)
-    def show_logs(engine):
-        if (engine.state.iteration - 1) % config.save.log_iter_interval == 0:
-            columns = ['epoch', 'iteration'] + list(engine.state.metrics.keys())
-            values = [str(engine.state.epoch), str(engine.state.iteration)] \
-                   + [str(value) for value in engine.state.metrics.values()]
-
-            message = '[{epoch}/{max_epoch}][{i}/{max_i}]'.format(epoch=engine.state.epoch,
-                                                                  max_epoch=config.run.n_epochs,
-                                                                  i=engine.state.iteration,
-                                                                  max_i=len(train_data_loader))
-
-            for name, value in zip(columns, values):
-                message += ' | {name}: {value}'.format(name=name, value=value)
-
-            pbar.log_message(message)
 
     timer.attach(trainer,
                  start=Events.EPOCH_STARTED, resume=Events.ITERATION_STARTED,
