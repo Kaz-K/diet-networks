@@ -58,8 +58,8 @@ class DietNetworks(nn.Module):
 
         self.use_reconstruction = use_reconstruction
 
-    def forward(self, x):
-        x_t = torch.t(x)
+    def forward(self, x, x_t):
+        # x_t = torch.t(x)
         We = self.aux_e2(self.dropout(F.relu(self.aux_e1(x_t))))
         h = torch.matmul(x, We)
         y = self.l2(h)
@@ -98,8 +98,8 @@ class ModifiedDietNetworks(nn.Module):
 
         self.use_reconstruction = use_reconstruction
 
-    def forward(self, x):
-        x_t = torch.t(x)
+    def forward(self, x, x_t):
+        # x_t = torch.t(x)
         Ue = self.Ue.expand_as(x)
         We = self.aux_e2(self.dropout(F.relu(self.aux_e1(x_t))))
         h = torch.matmul(x * self.Ue, We)

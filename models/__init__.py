@@ -32,7 +32,7 @@ def get_model(model_config):
             sample_size=model_config.sample_size,
             embedding_size=model_config.embedding_size,
             use_dropout=model_config.use_dropout,
-            use_reconstruction=model_config.use_reconstruction, 
+            use_reconstruction=model_config.use_reconstruction,
         )
 
     else:

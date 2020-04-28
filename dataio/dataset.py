@@ -1,5 +1,5 @@
 import numpy as np
-import torch 
+import torch
 from torch.utils import data
 
 
@@ -16,10 +16,13 @@ class LungCancerDataset(data.Dataset):
 
     def __getitem__(self, i):
         data = self.data_table[i, ...]
-        data = data[np.newaxis, ...].astype(np.float32)
+        data = data.astype(np.float32)
         label = np.array(self.label_table[i])
 
         data = torch.from_numpy(data)
         label = torch.from_numpy(label)
 
-        return data, label
+        return {
+            'data': data,
+            'label': label,
+        }
