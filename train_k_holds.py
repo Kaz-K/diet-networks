@@ -3,6 +3,8 @@ import argparse
 import matplotlib.pyplot as plt
 from functools import partial
 from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+import pandas as pd
 
 import torch
 import torch.nn as nn
@@ -42,7 +44,7 @@ def calc_metrics(out, y):
     }
 
 
-def main(config, needs_save, study_name, k, n_splits):
+def main(config, needs_save, study_name, k, n_splits, output_dir_path):
     if config.run.visible_devices:
         os.environ['CUDA_VISIBLE_DEVICES'] = config.run.visible_devices
 
@@ -73,9 +75,6 @@ def main(config, needs_save, study_name, k, n_splits):
         )
     else:
         raise NotImplementedError
-
-    if needs_save:
-        output_dir_path = get_output_dir_path(config.save, study_name)
 
     scheduler = LambdaLR(optimizer, lr_lambda=lambda epoch: 0.99 ** epoch)
 
@@ -245,6 +244,39 @@ def main(config, needs_save, study_name, k, n_splits):
     trainer.run(train_data_loader, config.run.n_epochs)
 
 
+def plot_accuracy(config, output_dir_path, n_splits):
+    for mode in ['train', 'val']:
+        result = None
+        for i in range(n_splits):
+            log_path = os.path.join(output_dir_path, mode + '_logs_' + str(i) + '.csv')
+            df = pd.read_csv(log_path, header=0)['accuracy'].to_frame()
+            df = df.rename(columns={'accuracy': 'accuracy_' + str(i)})
+
+            if result is None:
+                result = df
+            else:
+                result = pd.concat([result, df], axis=1)
+
+        result.plot()
+        plt.title(os.path.basename(output_dir_path))
+        plt.ylim([0, 1.1])
+        plt.xlim([0, config.run.n_epochs])
+        plt.legend(bbox_to_anchor=(1, 0), loc='lower right', borderaxespad=1, fontsize=10)
+        plt.savefig(os.path.join(output_dir_path, 'result.png'))
+        plt.clf()
+
+        mean = result.mean(axis=1)
+        std = result.std(axis=1)
+        plt.figure()
+        plt.title(os.path.basename(output_dir_path))
+        plt.ylim([0, 1.5])
+        plt.xlim([0, config.run.n_epochs])
+        plt.plot(range(0, config.run.n_epochs), mean, 'b')
+        plt.fill_between(range(0, config.run.n_epochs), mean - 2 * std, mean + 2 * std, color='b', alpha=0.2)
+        plt.savefig(os.path.join(output_dir_path, 'mean.png'))
+        plt.clf()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train DietNetworks')
     parser.add_argument('-c', '--config', help='config file',
@@ -256,6 +288,18 @@ if __name__ == '__main__':
     config = load_json(args.config)
     study_name = os.path.splitext(os.path.basename(args.config))[0]
 
+    if args.save:
+        output_dir_path = get_output_dir_path(config.save, study_name)
+    else:
+        output_dir_path = None
+
     n_splits = int(args.kholds)
     for i in range(n_splits):
-        main(config, args.save, study_name, k=i, n_splits=n_splits)
+        main(config,
+             args.save,
+             study_name,
+             k=i,
+             n_splits=n_splits,
+             output_dir_path=output_dir_path)
+
+    plot_accuracy(config, output_dir_path, n_splits=args.kholds)

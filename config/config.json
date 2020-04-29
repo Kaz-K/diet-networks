@@ -16,14 +16,15 @@
     "test_size": 0.2,
     "random_state": 1,
     "batch_size": 10,
-    "num_workers": 1
+    "num_workers": 1,
+    "data_size": 950
   },
   "model": {
     "model_name": "ModifiedDietNetworks",
     "input_size": 17961,
     "hidden_size": 128,
     "output_size": 2,
-    "sample_size": 763,
+    "sample_size": 760,
     "embedding_size": 256,
     "use_dropout": false,
     "use_reconstruction": true
