@@ -34,16 +34,16 @@ def save_models(model, optimizer, epoch, iteration, config, output_dir_path):
     }, path)
 
 
-def save_logs(mode, engine, epoch, iteration, config, output_dir_path):
+def save_logs(mode, k, n_splits, engine, epoch, iteration, config, output_dir_path):
     if mode == 'train':
-        fname = os.path.join(output_dir_path, 'train_logs.csv')
+        fname = os.path.join(output_dir_path, 'train_logs_' + str(k) + '.csv')
     elif mode == 'val':
-        fname = os.path.join(output_dir_path, 'val_logs.csv')
+        fname = os.path.join(output_dir_path, 'val_logs_' + str(k) + '.csv')
     else:
-        raise NotImplementedError 
+        raise NotImplementedError
 
-    columns = ['epoch', 'iteration'] + list(engine.state.metrics.keys())
-    values = [str(epoch), str(iteration)] \
+    columns = ['k', 'n_splits', 'epoch', 'iteration'] + list(engine.state.metrics.keys())
+    values = [str(k), str(n_splits), str(epoch), str(iteration)] \
            + [str(value) for value in engine.state.metrics.values()]
 
     with open(fname, 'a') as f:

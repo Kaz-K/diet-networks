@@ -3,7 +3,9 @@
     "seed": false,
     "n_epochs": 500,
     "visible_devices": "0",
-    "transposed_matrix": "overall"
+    "transposed_matrix": "overall",
+    "w_feature_selection": 0.0001,
+    "w_reconstruction": false
   },
   "save": {
     "output_root_dir": "./result"
@@ -24,7 +26,7 @@
     "sample_size": 763,
     "embedding_size": 256,
     "use_dropout": false,
-    "use_reconstruction": false
+    "use_reconstruction": true
   },
   "optimizer": {
     "optimizer_name": "Adam",

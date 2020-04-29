@@ -1,5 +1,6 @@
 import os
 import argparse
+import pandas as pd
 import matplotlib.pyplot as plt
 from functools import partial
 from sklearn.metrics import confusion_matrix
@@ -15,7 +16,7 @@ from ignite.engine import Events
 from ignite.handlers import Timer
 from ignite.metrics import RunningAverage
 
-from dataio import get_data_loader
+from dataio import get_k_hold_data_loader
 from models import get_model
 from utils import load_json
 from utils import check_manual_seed
@@ -42,14 +43,19 @@ def calc_metrics(out, y):
     }
 
 
-def main(config, needs_save, study_name):
+def main(config, needs_save, study_name, k, n_splits):
     if config.run.visible_devices:
         os.environ['CUDA_VISIBLE_DEVICES'] = config.run.visible_devices
 
     seed = check_manual_seed(config.run.seed)
     print('Using seed: {}'.format(seed))
 
-    train_data_loader, test_data_loader, data_train = get_data_loader(config.dataset)
+    train_data_loader, test_data_loader, data_train = get_k_hold_data_loader(
+        config.dataset,
+        k=k,
+        n_splits=n_splits,
+    )
+
     data_train = torch.from_numpy(data_train).float().cuda(non_blocking=True)
     data_train = torch.t(data_train)
 
@@ -192,14 +198,34 @@ def main(config, needs_save, study_name):
     pbar.attach(trainer, metric_names=monitoring_metrics)
     pbar.attach(evaluator, metric_names=monitoring_metrics)
 
+    @trainer.on(Events.STARTED)
+    def events_started(engine):
+        if needs_save:
+            save_config(config, seed, output_dir_path)
+
     @trainer.on(Events.EPOCH_COMPLETED)
     def switch_training_to_evaluation(engine):
+        if needs_save:
+            save_logs('train', k, n_splits, trainer, trainer.state.epoch, trainer.state.iteration,
+                      config, output_dir_path)
+
         evaluator.run(test_data_loader, max_epochs=1)
 
     @evaluator.on(Events.EPOCH_COMPLETED)
+    def switch_evaluation_to_training(engine):
+        if needs_save:
+            save_logs('val', k, n_splits, evaluator, trainer.state.epoch, trainer.state.iteration,
+                      config, output_dir_path)
+
+            if trainer.state.epoch in [100, 200, 300, 400, 500]:
+                save_models(model, optimizer, trainer.state.epoch, trainer.state.iteration,
+                            config, output_dir_path)
+
+    @trainer.on(Events.EPOCH_COMPLETED)
+    @evaluator.on(Events.EPOCH_COMPLETED)
     def show_logs(engine):
-        columns = ['epoch', 'iteration'] + list(engine.state.metrics.keys())
-        values = [str(engine.state.epoch), str(engine.state.iteration)] \
+        columns = ['k', 'n_splits', 'epoch', 'iteration'] + list(engine.state.metrics.keys())
+        values = [str(k), str(n_splits), str(engine.state.epoch), str(engine.state.iteration)] \
                + [str(value) for value in engine.state.metrics.values()]
 
         message = '[{epoch}/{max_epoch}][{i}/{max_i}]'.format(epoch=engine.state.epoch,
@@ -211,13 +237,6 @@ def main(config, needs_save, study_name):
             message += ' | {name}: {value}'.format(name=name, value=value)
 
         pbar.log_message(message)
-
-    @evaluator.on(Events.EPOCH_COMPLETED)
-    def print_times(engine):
-        pbar.log_message('Epoch {} done. Time per batch: {:.3f}[s]'.format(
-            engine.state.epoch, timer.value())
-        )
-        timer.reset()
 
     timer.attach(trainer,
                  start=Events.EPOCH_STARTED, resume=Events.ITERATION_STARTED,
@@ -235,9 +254,12 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--config', help='config file',
                         default='./config/config.json')
     parser.add_argument('-s', '--save', help='save logs', action='store_true')
+    parser.add_argument('-k', '--kholds', help='number of k-holds', default=5)
     args = parser.parse_args()
 
     config = load_json(args.config)
     study_name = os.path.splitext(os.path.basename(args.config))[0]
 
-    main(config, args.save, study_name)
+    n_splits = int(args.kholds)
+    for i in range(n_splits):
+        main(config, args.save, study_name, k=i, n_splits=n_splits)
