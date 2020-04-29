@@ -36,16 +36,6 @@ def load_model(model, save_path):
     model.load_state_dict(model_state)
 
 
-def adjust_learning_rate(optimizer, init_lr, epoch, interval_epochs):
-    """
-    Sets the learning rate to the initial LR decayed by 10 every interval_epochs
-    originally obtained from https://github.com/ilsang/PyTorch-SE-Segmentation/blob/master/optim.py
-    """
-    lr = init_lr * (0.1 ** (epoch // interval_epochs))
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
-
-
 def get_output_dir_path(save_config, study_name):
     study_time = datetime.datetime.now().strftime('%b%d_%H-%M-%S')
     dir_name = study_name + '_' + study_time

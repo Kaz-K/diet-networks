@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.optim.lr_scheduler import LambdaLR
 
 from ignite.contrib.handlers import ProgressBar
 from ignite.engine import Engine
@@ -19,7 +20,6 @@ from dataio import get_data_loader
 from models import get_model
 from utils import load_json
 from utils import check_manual_seed
-from utils import adjust_learning_rate
 from utils import get_output_dir_path
 from utils import save_config
 from utils import save_logs
@@ -72,13 +72,10 @@ def main(config, needs_save, study_name):
     if needs_save:
         output_dir_path = get_output_dir_path(config.save, study_name)
 
+    scheduler = LambdaLR(optimizer, lr_lambda=lambda epoch: 0.99 ** epoch)
+
     def update(engine, batch):
-        adjust_learning_rate(
-            optimizer,
-            init_lr=config.optimizer.lr,
-            epoch=engine.state.epoch,
-            interval_epochs=config.optimizer.interval_epochs,
-        )
+        scheduler.step()
 
         model.train()
 

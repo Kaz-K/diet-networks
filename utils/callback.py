@@ -21,11 +21,13 @@ def save_config(config, seed=None, output_dir_path=None):
         json.dump(config_to_save, f)
 
 
-def save_models(model, optimizer, epoch, iteration, config, output_dir_path):
+def save_models(model, optimizer, k, n_splits, epoch, iteration, config, output_dir_path):
     os.makedirs(output_dir_path, exist_ok=True)
 
     path = os.path.join(
-        output_dir_path, 'epoch_{}_iteration_{}.pth'.format(epoch, iteration)
+        output_dir_path, 'epoch_{}_iteration_{}_{}_{}.pth'.format(
+            epoch, iteration, str(k), str(n_splits)
+        )
     )
 
     torch.save({

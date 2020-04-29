@@ -1,5 +1,6 @@
 from .DietNetworks import MLP
 from .DietNetworks import DietNetworks
+from .DietNetworks import ModifiedMLP
 from .DietNetworks import ModifiedDietNetworks
 
 
@@ -14,7 +15,7 @@ def get_model(model_config):
         )
 
     elif model_config.model_name == 'ModifiedMLP':
-        model = MLP(
+        model = ModifiedMLP(
             input_size=model_config.input_size,
             hidden_size=model_config.hidden_size,
             output_size=model_config.output_size,

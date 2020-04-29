@@ -1,6 +1,5 @@
 import os
 import argparse
-import pandas as pd
 import matplotlib.pyplot as plt
 from functools import partial
 from sklearn.metrics import confusion_matrix
@@ -9,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.optim.lr_scheduler import LambdaLR
 
 from ignite.contrib.handlers import ProgressBar
 from ignite.engine import Engine
@@ -20,7 +20,6 @@ from dataio import get_k_hold_data_loader
 from models import get_model
 from utils import load_json
 from utils import check_manual_seed
-from utils import adjust_learning_rate
 from utils import get_output_dir_path
 from utils import save_config
 from utils import save_logs
@@ -78,14 +77,9 @@ def main(config, needs_save, study_name, k, n_splits):
     if needs_save:
         output_dir_path = get_output_dir_path(config.save, study_name)
 
-    def update(engine, batch):
-        adjust_learning_rate(
-            optimizer,
-            init_lr=config.optimizer.lr,
-            epoch=engine.state.epoch,
-            interval_epochs=config.optimizer.interval_epochs,
-        )
+    scheduler = LambdaLR(optimizer, lr_lambda=lambda epoch: 0.99 ** epoch)
 
+    def update(engine, batch):
         model.train()
 
         x = batch['data'].float().cuda(non_blocking=True)
@@ -218,8 +212,10 @@ def main(config, needs_save, study_name, k, n_splits):
                       config, output_dir_path)
 
             if trainer.state.epoch in [100, 200, 300, 400, 500]:
-                save_models(model, optimizer, trainer.state.epoch, trainer.state.iteration,
+                save_models(model, optimizer, k, n_splits, trainer.state.epoch, trainer.state.iteration,
                             config, output_dir_path)
+
+        scheduler.step()
 
     @trainer.on(Events.EPOCH_COMPLETED)
     @evaluator.on(Events.EPOCH_COMPLETED)

@@ -1,11 +1,11 @@
 {
   "run": {
-    "seed": false,
+    "seed": 2020,
     "n_epochs": 500,
     "visible_devices": "0",
     "transposed_matrix": "overall",
-    "w_feature_selection": 0.0001,
-    "w_reconstruction": false
+    "w_feature_selection": false,
+    "w_reconstruction": 0.01
   },
   "save": {
     "output_root_dir": "./result"
@@ -19,7 +19,7 @@
     "num_workers": 1
   },
   "model": {
-    "model_name": "ModifiedDietNetworks",
+    "model_name": "MLP",
     "input_size": 17961,
     "hidden_size": 128,
     "output_size": 2,
