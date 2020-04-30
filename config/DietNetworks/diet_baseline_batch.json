@@ -3,7 +3,7 @@
     "seed": 2020,
     "n_epochs": 500,
     "visible_devices": "0",
-    "transposed_matrix": "overall",
+    "transposed_matrix": "batch",
     "w_feature_selection": false,
     "w_reconstruction": false
   },
@@ -24,7 +24,7 @@
     "input_size": 17961,
     "hidden_size": 128,
     "output_size": 2,
-    "sample_size": 760,
+    "sample_size": 10,
     "embedding_size": 256,
     "use_dropout": false,
     "use_reconstruction": false
