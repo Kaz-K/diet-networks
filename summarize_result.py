@@ -4,9 +4,11 @@ import pandas as pd
 
 
 studies = ['diet_baseline_Apr', 'diet_fs_0.0001_Apr', 'diet_fs_0.001_Apr', 'diet_fs_Apr',
-           'diet_recon_0.001_Apr', 'diet_recon_0.01_Apr',
+           'diet_recon_0.001_Apr', 'diet_recon_0.01_Apr', 'diet_recon_0.1_Apr',
+           'diet_recon_0.05_Apr', 'diet_recon_0.005_Apr', 'diet_recon_0.5_Apr',
+           'diet_recon_1.0_Apr', 'diet_recon_5.0_Apr',
            'mlp_baseline_Apr', 'mlp_fs_0.0001_Apr', 'mlp_fs_0.001_Apr', 'mlp_fs_Apr',
-           'mlp_recon_0.001_Apr', 'mlp_recon_0.01_Apr']
+           'mlp_recon_0.001_Apr', 'mlp_recon_0.01_Apr', 'diet_baseline_batch_Apr']
 
 modes = ['val']
 

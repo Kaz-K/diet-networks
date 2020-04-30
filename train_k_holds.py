@@ -210,7 +210,7 @@ def main(config, needs_save, study_name, k, n_splits, output_dir_path):
             save_logs('val', k, n_splits, evaluator, trainer.state.epoch, trainer.state.iteration,
                       config, output_dir_path)
 
-            if trainer.state.epoch in [100, 200, 300, 400, 500]:
+            if trainer.state.epoch % 100 == 0:
                 save_models(model, optimizer, k, n_splits, trainer.state.epoch, trainer.state.iteration,
                             config, output_dir_path)
 
