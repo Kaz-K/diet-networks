@@ -94,3 +94,30 @@ def get_k_hold_data_loader(data_config, k, n_splits):
     )
 
     return train_data_loder, test_data_loader, data_train
+
+
+def get_k_hold_data_table(data_config, k, n_splits):
+    df = pd.read_csv(data_config.data_path, index_col=0)
+    data_frame = df.loc[:, df.columns[1]:df.columns[-1]]
+    data_frame = data_frame.values.astype(np.int32)
+    data_frame = data_frame[:data_config.data_size, :]
+
+    if data_config.as_binary:
+        data_frame[data_frame >= 1] = 1
+        data_frame[data_frame < 1] = 0
+
+    label = df['ONCOTREE_CODE'].values
+    label[label == 'LUAD'] = 1
+    label[label == 'LUSC'] = 0
+    label = label.astype(np.int32)
+    label = label[:data_config.data_size]
+
+    kf = KFold(n_splits=n_splits)
+    train_index, test_index = list(kf.split(data_frame, label))[k]
+
+    data_train = data_frame[train_index, :]
+    data_test = data_frame[test_index, :]
+    label_train = label[train_index]
+    label_test = label[test_index]
+    
+    return data_train, label_train, data_test, label_test

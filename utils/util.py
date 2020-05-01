@@ -29,11 +29,11 @@ def check_manual_seed(seed):
 
 def load_model(model, save_path):
     model_state = torch.load(save_path)
-    if isinstance(model_state, nn.DataParallel):
+    if isinstance(model, nn.DataParallel):
         model_state = model_state.module.state_dict()
     else:
         model_state = model_state.state_dict()
-    model.load_state_dict(model_state)
+    model.load_state_dict(model_state['model'])
 
 
 def get_output_dir_path(save_config, study_name):

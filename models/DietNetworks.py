@@ -33,6 +33,9 @@ class MLP(nn.Module):
 
         return y, x_hat
 
+    def get_embedding(self):
+        return self.l1.weight.T
+
 
 class ModifiedMLP(nn.Module):
 
@@ -67,6 +70,11 @@ class ModifiedMLP(nn.Module):
             x_hat = F.sigmoid(self.l3(Ur * h))
 
         return y, x_hat
+
+    def get_embedding(self):
+        W = self.l1.weight.T
+        Ue = self.Ue.T.expand_as(W)
+        return Ue * W
 
 
 class DietNetworks(nn.Module):
@@ -104,6 +112,10 @@ class DietNetworks(nn.Module):
             x_hat = F.sigmoid(torch.matmul(h, torch.t(Wr)))
 
         return y, x_hat
+
+    def get_embedding(self, x_t):
+        We = self.aux_e2(self.dropout(F.relu(self.aux_e1(x_t))))
+        return We
 
 
 class ModifiedDietNetworks(nn.Module):
@@ -145,3 +157,8 @@ class ModifiedDietNetworks(nn.Module):
             x_hat = F.sigmoid(Ur * torch.matmul(h, torch.t(Wr)))
 
         return y, x_hat
+
+    def get_embedding(self, x_t):
+        We = self.aux_e2(self.dropout(F.relu(self.aux_e1(x_t))))
+        Ue = self.Ue.T.expand_as(We)
+        return Ue * We
