@@ -1,11 +1,14 @@
 import os
+import numpy as np
 import argparse
 import matplotlib.pyplot as plt
 from functools import partial
+import scipy.stats
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import pairwise_distances
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import networkx as nx
@@ -39,7 +42,54 @@ def get_saved_model_path(config, checkpoint_epoch, i, n_splits):
     return saved_model_path
 
 
-def main(config, needs_save, study_name, i, n_splits):
+def get_gene_symbols(data_path):
+    df = pd.read_csv(data_path, index_col=0)
+    data = df.loc[:, df.columns[1]:df.columns[-1]]
+    gene_symbols = data.columns
+    return gene_symbols
+
+
+def calc_freq(data, label, threshold):
+    p_values = []
+    attributes = []
+
+    for i in range(data.shape[1]):
+        genes = data[:, i]
+        adeno  = genes[label == 1]
+        scc = genes[label == 0]
+
+        ttest = scipy.stats.ttest_ind(adeno, scc)
+        p_value = ttest.pvalue
+        if p_value != p_value: # if p_valus is np.nan
+            p_value = 1.0
+        p_values.append(p_value)
+
+        if p_value < threshold:
+            if np.sum(adeno) > np.sum(scc):  # adeno: red
+                attributes.append('orangered')
+            elif np.sum(scc) > np.sum(adeno):  # scc : blue
+                attributes.append('royalblue')
+        else:
+            attributes.append('silver')  # unclassified : green
+
+    return np.array(attributes), p_values
+
+
+def show_top_k_freq_symbols(gene_symbols, attributes, p_values):
+    freq_symbols = pd.DataFrame({
+        'gene_symbols': gene_symbols.values,
+        'attributes': attributes,
+        'p_values': p_values,
+    })
+    scc_symbols = freq_symbols[freq_symbols['attributes'] == 'royalblue']
+    scc_symbols = scc_symbols.sort_values(by=['p_values'])
+    print('scc_symbols: ', scc_symbols)
+    adeno_symbols = freq_symbols[freq_symbols['attributes'] == 'orangered']
+    adeno_symbols = adeno_symbols.sort_values(by=['p_values'])
+    print('adeno_symbols: ', adeno_symbols)
+
+
+def main(config, needs_save, study_name, i, n_splits, NUM=1000):
     if config.run.visible_devices:
         os.environ['CUDA_VISIBLE_DEVICES'] = config.run.visible_devices
 
@@ -49,11 +99,29 @@ def main(config, needs_save, study_name, i, n_splits):
     if needs_save:
         output_dir_path = get_output_dir_path(config.save, study_name)
 
-    train_data_loader, test_data_loader, data_train = get_k_hold_data_loader(
+    train_data_loader, test_data_loader, data_train, label_train = get_k_hold_data_loader(
         config.dataset,
         k=i,
         n_splits=n_splits,
+        with_label_train=True,
     )
+
+    attributes, p_values = calc_freq(data_train, label_train, 0.001)
+    gene_symbols = get_gene_symbols(config.dataset.data_path)
+
+    show_top_k_freq_symbols(gene_symbols, attributes, p_values)
+    input()
+
+    labels = {}
+    for i, symbol in enumerate(gene_symbols):
+        if i < NUM:
+            labels[i] = symbol
+        else:
+            break
+
+    attributes = attributes[: NUM]
+    p_values = p_values[: NUM]
+
     data_train = torch.from_numpy(data_train).float().cuda(non_blocking=True)
     data_train = torch.t(data_train)
 
@@ -86,17 +154,23 @@ def main(config, needs_save, study_name, i, n_splits):
                 embedding = model.module.get_embedding(data_train)
 
         embedding = embedding.detach().cpu().numpy()
-        embedding = embedding[:1000, :]
+        embedding = embedding[: NUM, :]
 
         X_tsne = TSNE(n_components=2, random_state=0).fit_transform(embedding)
-        plt.scatter(X_tsne[:, 0], X_tsne[:, 1], s=5.)
+        fig, ax = plt.subplots()
+        ax.scatter(X_tsne[:, 0], X_tsne[:, 1], s=10., c=attributes)
+        # for i in range(NUM):
+        #     ax.annotate(labels[i], (X_tsne[i, 0], X_tsne[i, 1]))
         plt.show()
         plt.clf()
 
         X_pca = PCA(n_components=2).fit_transform(embedding)
-        plt.scatter(X_pca[:, 0], X_pca[:, 1], s=5.)
+        fig, ax = plt.subplots()
+        ax.scatter(X_pca[:, 0], X_pca[:, 1], s=10., c=attributes)
+        # for i in range(NUM):
+        #     ax.annotate(labels[i], (X_pca[i, 0], X_pca[i, 1]))
         plt.xlim([-5.0, 5.0])
-        plt.ylim([-1.0, 1.0])
+        plt.ylim([-0.2, 1.0])
         plt.show()
         plt.clf()
 

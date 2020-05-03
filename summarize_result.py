@@ -4,6 +4,13 @@ import pandas as pd
 
 
 studies = ['diet_baseline_Apr', 'diet_fs_0.0001_Apr', 'diet_fs_0.001_Apr', 'diet_fs_Apr',
+           'diet_fs_recon_0.1_May',
+           'diet_fs_recon_0.01_May01_09-11-51',
+           'diet_fs_recon_0.01_May01_12-38-06',
+           'diet_fs_recon_0.01_May01_13-19-13',
+           'diet_fs_recon_0.01_May01_13-58-25',
+           'diet_fs_recon_0.01_May01_14-37-25',
+           'diet_fs_recon_0.001_May', 'diet_fs_recon_0.0001_May',
            'diet_recon_0.001_Apr', 'diet_recon_0.01_Apr', 'diet_recon_0.1_Apr',
            'diet_recon_0.05_Apr', 'diet_recon_0.005_Apr', 'diet_recon_0.5_Apr',
            'diet_recon_1.0_Apr', 'diet_recon_5.0_Apr',

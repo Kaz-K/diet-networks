@@ -50,7 +50,7 @@ def get_data_loader(data_config):
     return train_data_loder, test_data_loader, data_train
 
 
-def get_k_hold_data_loader(data_config, k, n_splits):
+def get_k_hold_data_loader(data_config, k, n_splits, with_label_train=False):
     df = pd.read_csv(data_config.data_path, index_col=0)
     data_frame = df.loc[:, df.columns[1]:df.columns[-1]]
     data_frame = data_frame.values.astype(np.int32)
@@ -93,7 +93,10 @@ def get_k_hold_data_loader(data_config, k, n_splits):
         drop_last=True,
     )
 
-    return train_data_loder, test_data_loader, data_train
+    if with_label_train:
+        return train_data_loder, test_data_loader, data_train, label_train
+    else:
+        return train_data_loder, test_data_loader, data_train
 
 
 def get_k_hold_data_table(data_config, k, n_splits):
@@ -119,5 +122,5 @@ def get_k_hold_data_table(data_config, k, n_splits):
     data_test = data_frame[test_index, :]
     label_train = label[train_index]
     label_test = label[test_index]
-    
+
     return data_train, label_train, data_test, label_test
