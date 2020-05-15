@@ -162,3 +162,9 @@ class ModifiedDietNetworks(nn.Module):
         We = self.aux_e2(self.dropout(F.relu(self.aux_e1(x_t))))
         Ue = self.Ue.T.expand_as(We)
         return Ue * We
+
+    def approx(self, x, approx):
+        h_hat = torch.matmul(x, approx)
+        y = self.l2(h_hat)
+
+        return y, None

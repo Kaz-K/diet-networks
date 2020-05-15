@@ -262,7 +262,7 @@ def plot_accuracy(config, output_dir_path, n_splits):
         plt.ylim([0, 1.1])
         plt.xlim([0, config.run.n_epochs])
         plt.legend(bbox_to_anchor=(1, 0), loc='lower right', borderaxespad=1, fontsize=10)
-        plt.savefig(os.path.join(output_dir_path, 'result.png'))
+        plt.savefig(os.path.join(output_dir_path, 'result.eps'))
         plt.clf()
 
         mean = result.mean(axis=1)
@@ -273,7 +273,7 @@ def plot_accuracy(config, output_dir_path, n_splits):
         plt.xlim([0, config.run.n_epochs])
         plt.plot(range(0, config.run.n_epochs), mean, 'b')
         plt.fill_between(range(0, config.run.n_epochs), mean - 2 * std, mean + 2 * std, color='b', alpha=0.2)
-        plt.savefig(os.path.join(output_dir_path, 'mean.png'))
+        plt.savefig(os.path.join(output_dir_path, 'mean.eps'))
         plt.clf()
 
 

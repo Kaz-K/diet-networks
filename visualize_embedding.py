@@ -31,13 +31,20 @@ from utils import load_model
 def get_saved_model_path(config, checkpoint_epoch, i, n_splits):
     pattern1 = 'epoch_' + str(checkpoint_epoch)
     pattern2 = '_' + str(i) + '_' + str(n_splits) + '.pth'
+
+    target_model_name = None
     for model_name in os.listdir(config.save.saved_dir_path):
-        if model_name.startswith(pattern1) and model_name.endswith(pattern2):
-            break
+        if model_name.startswith(pattern1):
+            if model_name.endswith(pattern2):
+                target_model_name = model_name
+                break
+
+    if target_model_name is None:
+        raise Exception('Target model name not found.')
 
     saved_model_path = os.path.join(
         config.save.saved_dir_path,
-        model_name,
+        target_model_name,
     )
     return saved_model_path
 
@@ -53,6 +60,8 @@ def calc_freq(data, label, threshold):
     p_values = []
     attributes = []
 
+    n_scc = 0
+    n_adeno = 0
     for i in range(data.shape[1]):
         genes = data[:, i]
         adeno  = genes[label == 1]
@@ -67,10 +76,15 @@ def calc_freq(data, label, threshold):
         if p_value < threshold:
             if np.sum(adeno) > np.sum(scc):  # adeno: red
                 attributes.append('orangered')
+                n_adeno += 1
             elif np.sum(scc) > np.sum(adeno):  # scc : blue
                 attributes.append('royalblue')
+                n_scc += 1
         else:
             attributes.append('silver')  # unclassified : green
+
+    print('# of SCC: ', n_scc)
+    print('# of ADC: ', n_adeno)
 
     return np.array(attributes), p_values
 
@@ -106,11 +120,11 @@ def main(config, needs_save, study_name, i, n_splits, NUM=1000):
         with_label_train=True,
     )
 
-    attributes, p_values = calc_freq(data_train, label_train, 0.001)
+    attributes, p_values = calc_freq(data_train, label_train, 0.05)
     gene_symbols = get_gene_symbols(config.dataset.data_path)
 
-    show_top_k_freq_symbols(gene_symbols, attributes, p_values)
-    input()
+    # show_top_k_freq_symbols(gene_symbols, attributes, p_values)
+    # input()
 
     labels = {}
     for i, symbol in enumerate(gene_symbols):
@@ -129,7 +143,8 @@ def main(config, needs_save, study_name, i, n_splits, NUM=1000):
     model.cuda()
     model = nn.DataParallel(model)
 
-    for checkpoint_epoch in config.save.checkpoint_epochs:
+    # for checkpoint_epoch in config.save.checkpoint_epochs:
+    for checkpoint_epoch in [500]:
         saved_model_path = get_saved_model_path(
             config,
             checkpoint_epoch,
@@ -156,23 +171,45 @@ def main(config, needs_save, study_name, i, n_splits, NUM=1000):
         embedding = embedding.detach().cpu().numpy()
         embedding = embedding[: NUM, :]
 
-        X_tsne = TSNE(n_components=2, random_state=0).fit_transform(embedding)
-        fig, ax = plt.subplots()
-        ax.scatter(X_tsne[:, 0], X_tsne[:, 1], s=10., c=attributes)
-        # for i in range(NUM):
-        #     ax.annotate(labels[i], (X_tsne[i, 0], X_tsne[i, 1]))
-        plt.show()
-        plt.clf()
+        # X_tsne = TSNE(n_components=2, random_state=0).fit_transform(embedding)
+        # fig, ax = plt.subplots()
+        # ax.scatter(X_tsne[:, 0], X_tsne[:, 1], s=10., c=attributes)
+        #
+        # # for i in range(NUM):
+        # #     ax.annotate(labels[i], (X_tsne[i, 0], X_tsne[i, 1]))
+        #
+        # plt.show()
+        # plt.clf()
 
+        pca = PCA(n_components=2)
         X_pca = PCA(n_components=2).fit_transform(embedding)
         fig, ax = plt.subplots()
         ax.scatter(X_pca[:, 0], X_pca[:, 1], s=10., c=attributes)
-        # for i in range(NUM):
-        #     ax.annotate(labels[i], (X_pca[i, 0], X_pca[i, 1]))
-        plt.xlim([-5.0, 5.0])
+
+        for i in range(NUM):
+        #     dist = np.sqrt(np.power(X_pca[i, 0], 2) + np.power(X_pca[i, 1], 2))
+        #     if dist > 1.0:
+            ax.annotate(labels[i], (X_pca[i, 0], X_pca[i, 1]))
+
+        # plt.xlim([-8.0, 8.0])
         plt.ylim([-0.2, 1.0])
         plt.show()
         plt.clf()
+
+        # pca = PCA(n_components=2)
+        # pca.fit_transform(embedding)
+        # axis_1= pca.components_[0]
+        # print('axis_1: ', axis_1.shape)
+        # print('explained_variance_ratio_: ', pca.explained_variance_ratio_)
+        # print('singular_values_: ', pca.singular_values_)
+        #
+        # dot = np.dot(embedding, axis_1)
+        # print('dot: ', dot)
+        # print('dot: ', dot.shape)
+        # print('argsort: ', np.argsort(dot))
+        # for arg in np.argsort(dot):
+        #     print(dot[arg], labels[arg])
+        #     input()
 
 
 if __name__ == '__main__':
