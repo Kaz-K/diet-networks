@@ -76,7 +76,7 @@ def main(config, needs_save, study_name, k, n_splits, output_dir_path):
     else:
         raise NotImplementedError
 
-    scheduler = LambdaLR(optimizer, lr_lambda=lambda epoch: 0.99 ** epoch)
+    # scheduler = LambdaLR(optimizer, lr_lambda=lambda epoch: 0.99 ** epoch)
 
     def update(engine, batch):
         model.train()
@@ -214,7 +214,7 @@ def main(config, needs_save, study_name, k, n_splits, output_dir_path):
                 save_models(model, optimizer, k, n_splits, trainer.state.epoch, trainer.state.iteration,
                             config, output_dir_path)
 
-        scheduler.step()
+        # scheduler.step()
 
     @trainer.on(Events.EPOCH_COMPLETED)
     @evaluator.on(Events.EPOCH_COMPLETED)
@@ -245,6 +245,8 @@ def main(config, needs_save, study_name, k, n_splits, output_dir_path):
 
 
 def plot_accuracy(config, output_dir_path, n_splits):
+    dir_name = os.path.basename(output_dir_path)
+
     for mode in ['train', 'val']:
         result = None
         for i in range(n_splits):
@@ -262,7 +264,8 @@ def plot_accuracy(config, output_dir_path, n_splits):
         plt.ylim([0, 1.1])
         plt.xlim([0, config.run.n_epochs])
         plt.legend(bbox_to_anchor=(1, 0), loc='lower right', borderaxespad=1, fontsize=10)
-        plt.savefig(os.path.join(output_dir_path, 'result.eps'))
+        plt.savefig(os.path.join(output_dir_path, dir_name + '_result.eps'))
+        plt.savefig(os.path.join(output_dir_path, dir_name + '_result.png'))
         plt.clf()
 
         mean = result.mean(axis=1)
@@ -273,7 +276,8 @@ def plot_accuracy(config, output_dir_path, n_splits):
         plt.xlim([0, config.run.n_epochs])
         plt.plot(range(0, config.run.n_epochs), mean, 'b')
         plt.fill_between(range(0, config.run.n_epochs), mean - 2 * std, mean + 2 * std, color='b', alpha=0.2)
-        plt.savefig(os.path.join(output_dir_path, 'mean.eps'))
+        plt.savefig(os.path.join(output_dir_path, dir_name + '_mean.eps'))
+        plt.savefig(os.path.join(output_dir_path, dir_name + '_mean.png'))
         plt.clf()
 
 

@@ -2,25 +2,25 @@ import os
 import numpy as np
 import pandas as pd
 
-
-studies = ['diet_baseline_Apr', 'diet_fs_0.0001_Apr', 'diet_fs_0.001_Apr', 'diet_fs_Apr',
-           'diet_fs_recon_0.1_May',
-           'diet_fs_recon_0.01_May01_09-11-51',
-           'diet_fs_recon_0.01_May01_12-38-06',
-           'diet_fs_recon_0.01_May01_13-19-13',
-           'diet_fs_recon_0.01_May01_13-58-25',
-           'diet_fs_recon_0.01_May01_14-37-25',
-           'diet_fs_recon_0.001_May', 'diet_fs_recon_0.0001_May',
-           'diet_recon_0.001_Apr', 'diet_recon_0.01_Apr', 'diet_recon_0.1_Apr',
-           'diet_recon_0.05_Apr', 'diet_recon_0.005_Apr', 'diet_recon_0.5_Apr',
-           'diet_recon_1.0_Apr', 'diet_recon_5.0_Apr',
-           'mlp_baseline_Apr', 'mlp_fs_0.0001_Apr', 'mlp_fs_0.001_Apr', 'mlp_fs_Apr',
-           'mlp_recon_0.001_Apr', 'mlp_recon_0.01_Apr', 'diet_baseline_batch_Apr']
+studies = [
+    'diet_baseline_May20_00-53-31',
+    'diet_recon_0.1_May20_03-21-16',
+    'diet_recon_0.01_May20_03-04-50',
+    'diet_recon_0.001_May20_02-48-22',
+    'diet_fs_May20_02-32-12',
+    'diet_fs_recon_0.1_May20_02-15-28',
+    'diet_fs_recon_0.01_May20_01-58-46',
+    'diet_fs_recon_0.001_May20_01-42-06',
+    'diet_fs_0.001_May20_01-25-58',
+    'diet_fs_0.0001_May20_01-09-44',
+    'mlp_baseline_May20_03-37-40',
+    'mlp_fs_May20_04-26-52',
+    'mlp_fs_0.001_May20_04-09-57',
+    'mlp_fs_0.0001_May20_03-53-22',
+]
 
 modes = ['val']
-
-result_root_dir = './result'
-
+result_root_dir = './result_fixed'
 lower_epoch = 400
 upper_epoch = 500
 n_splits = 5
@@ -56,5 +56,5 @@ if __name__ == '__main__':
             std = np.std(result)
 
             print(study)
-            print('mean: ', mean)
-            print('std: ', std)
+            print('  mean: ', mean)
+            print('  std: ', std)

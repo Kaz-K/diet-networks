@@ -32,6 +32,10 @@ def get_saved_model_path(config, checkpoint_epoch, i, n_splits):
     pattern1 = 'epoch_' + str(checkpoint_epoch)
     pattern2 = '_' + str(i) + '_' + str(n_splits) + '.pth'
 
+    print('pattern1: ', pattern1)
+    print('pattern2: ', pattern2)
+    print('saved_dir_path: ', config.save.saved_dir_path)
+
     target_model_name = None
     for model_name in os.listdir(config.save.saved_dir_path):
         if model_name.startswith(pattern1):
@@ -127,9 +131,9 @@ def main(config, needs_save, study_name, i, n_splits, NUM=1000):
     # input()
 
     labels = {}
-    for i, symbol in enumerate(gene_symbols):
-        if i < NUM:
-            labels[i] = symbol
+    for g, symbol in enumerate(gene_symbols):
+        if g < NUM:
+            labels[g] = symbol
         else:
             break
 
@@ -144,7 +148,7 @@ def main(config, needs_save, study_name, i, n_splits, NUM=1000):
     model = nn.DataParallel(model)
 
     # for checkpoint_epoch in config.save.checkpoint_epochs:
-    for checkpoint_epoch in [500]:
+    for checkpoint_epoch in range(100, 600, 100):
         saved_model_path = get_saved_model_path(
             config,
             checkpoint_epoch,
@@ -171,29 +175,30 @@ def main(config, needs_save, study_name, i, n_splits, NUM=1000):
         embedding = embedding.detach().cpu().numpy()
         embedding = embedding[: NUM, :]
 
-        # X_tsne = TSNE(n_components=2, random_state=0).fit_transform(embedding)
-        # fig, ax = plt.subplots()
-        # ax.scatter(X_tsne[:, 0], X_tsne[:, 1], s=10., c=attributes)
-        #
-        # # for i in range(NUM):
-        # #     ax.annotate(labels[i], (X_tsne[i, 0], X_tsne[i, 1]))
-        #
-        # plt.show()
-        # plt.clf()
+
+        X_tsne = TSNE(n_components=2, random_state=0).fit_transform(embedding)
+        fig, ax = plt.subplots()
+        ax.scatter(X_tsne[:, 0], X_tsne[:, 1], s=10., c=attributes)
+
+        # for i in range(NUM):
+        #     ax.annotate(labels[i], (X_tsne[i, 0], X_tsne[i, 1]))
+
+        plt.savefig('tsne_' + str(checkpoint_epoch) + '.png')
+        plt.clf()
 
         pca = PCA(n_components=2)
         X_pca = PCA(n_components=2).fit_transform(embedding)
         fig, ax = plt.subplots()
         ax.scatter(X_pca[:, 0], X_pca[:, 1], s=10., c=attributes)
 
-        for i in range(NUM):
-        #     dist = np.sqrt(np.power(X_pca[i, 0], 2) + np.power(X_pca[i, 1], 2))
-        #     if dist > 1.0:
-            ax.annotate(labels[i], (X_pca[i, 0], X_pca[i, 1]))
+        # for i in range(NUM):
+        # #     dist = np.sqrt(np.power(X_pca[i, 0], 2) + np.power(X_pca[i, 1], 2))
+        # #     if dist > 1.0:
+        #     ax.annotate(labels[i], (X_pca[i, 0], X_pca[i, 1]))
 
         # plt.xlim([-8.0, 8.0])
-        plt.ylim([-0.2, 1.0])
-        plt.show()
+        # plt.ylim([-0.2, 1.0])
+        plt.savefig('pca_' + str(checkpoint_epoch) + '.png')
         plt.clf()
 
         # pca = PCA(n_components=2)

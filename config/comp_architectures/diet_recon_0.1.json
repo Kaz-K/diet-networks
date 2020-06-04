@@ -1,14 +1,14 @@
 {
   "run": {
     "seed": 2020,
-    "n_epochs": 500,
+    "n_epochs": 5000,
     "visible_devices": "0",
-    "transposed_matrix": "batch",
+    "transposed_matrix": "overall",
     "w_feature_selection": false,
     "w_reconstruction": 0.1
   },
   "save": {
-    "output_root_dir": "./result"
+    "output_root_dir": "./result_comp"
   },
   "dataset": {
     "data_path": "./data/data_integration_counts_most_common.csv",
@@ -24,7 +24,7 @@
     "input_size": 17961,
     "hidden_size": 128,
     "output_size": 2,
-    "sample_size": 10,
+    "sample_size": 760,
     "embedding_size": 256,
     "use_dropout": false,
     "use_reconstruction": true

@@ -1,15 +1,14 @@
 {
   "run": {
-    "seed": false,
-    "n_epochs": 500,
+    "seed": 2020,
+    "n_epochs": 5000,
     "visible_devices": "0",
     "transposed_matrix": "overall",
     "w_feature_selection": 0.0001,
     "w_reconstruction": false
   },
   "save": {
-    "saved_dir_path": "./result/mlp_baseline_Apr29_15-27-57",
-    "checkpoint_epochs": [100, 200, 300, 400, 500]
+    "output_root_dir": "./result_comp"
   },
   "dataset": {
     "data_path": "./data/data_integration_counts_most_common.csv",
@@ -21,7 +20,7 @@
     "data_size": 950
   },
   "model": {
-    "model_name": "MLP",
+    "model_name": "ModifiedMLP",
     "input_size": 17961,
     "hidden_size": 128,
     "output_size": 2,

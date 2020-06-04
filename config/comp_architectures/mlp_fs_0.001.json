@@ -1,14 +1,14 @@
 {
   "run": {
     "seed": 2020,
-    "n_epochs": 500,
+    "n_epochs": 5000,
     "visible_devices": "0",
     "transposed_matrix": "overall",
-    "w_feature_selection": false,
+    "w_feature_selection": 0.001,
     "w_reconstruction": false
   },
   "save": {
-    "output_root_dir": "./result"
+    "output_root_dir": "./result_comp"
   },
   "dataset": {
     "data_path": "./data/data_integration_counts_most_common.csv",
@@ -20,7 +20,7 @@
     "data_size": 950
   },
   "model": {
-    "model_name": "ModifiedDietNetworks",
+    "model_name": "ModifiedMLP",
     "input_size": 17961,
     "hidden_size": 128,
     "output_size": 2,

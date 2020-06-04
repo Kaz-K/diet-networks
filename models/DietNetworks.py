@@ -103,7 +103,7 @@ class DietNetworks(nn.Module):
 
     def forward(self, x, x_t):
         We = self.aux_e2(self.dropout(F.relu(self.aux_e1(x_t))))
-        h = torch.matmul(x, We)
+        h = F.relu(torch.matmul(x, We))
         y = self.l2(h)
 
         x_hat = None
@@ -147,7 +147,7 @@ class ModifiedDietNetworks(nn.Module):
     def forward(self, x, x_t):
         Ue = self.Ue.expand_as(x)
         We = self.aux_e2(self.dropout(F.relu(self.aux_e1(x_t))))
-        h = torch.matmul(x * self.Ue, We)
+        h = F.relu(torch.matmul(x * self.Ue, We))
         y = self.l2(h)
 
         x_hat = None
@@ -164,7 +164,7 @@ class ModifiedDietNetworks(nn.Module):
         return Ue * We
 
     def approx(self, x, approx):
-        h_hat = torch.matmul(x, approx)
+        h_hat = F.relu(torch.matmul(x, approx))
         y = self.l2(h_hat)
 
         return y, None
