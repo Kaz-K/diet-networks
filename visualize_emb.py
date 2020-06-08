@@ -1,4 +1,5 @@
 import os
+import re
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
@@ -21,36 +22,45 @@ from dataio import get_k_hold_data_loader
 from models import get_model
 from utils import load_json
 from utils import check_manual_seed
-from utils import get_output_dir_path
 from utils import save_config
 from utils import save_logs
 from utils import save_models
 from utils import load_model
 
 
-def get_saved_model_path(config, checkpoint_epoch, i, n_splits):
+def get_saved_model_path(config, study_name, checkpoint_epoch, i, n_splits,
+                         sep='Jun05'):
+    saved_root_dir = config.save.output_root_dir
+    saved_dir_path = None
+    for dir_name in os.listdir(saved_root_dir):
+        sep_index = re.search(sep, dir_name).start()
+        saved_study_name = dir_name[:sep_index-1]
+        if study_name == saved_study_name:
+            saved_dir_path = os.path.join(saved_root_dir, dir_name)
+            break
+
+    assert saved_dir_path is not None
+
     pattern1 = 'epoch_' + str(checkpoint_epoch)
     pattern2 = '_' + str(i) + '_' + str(n_splits) + '.pth'
 
-    print('pattern1: ', pattern1)
-    print('pattern2: ', pattern2)
-    print('saved_dir_path: ', config.save.saved_dir_path)
-
     target_model_name = None
-    for model_name in os.listdir(config.save.saved_dir_path):
+    for model_name in os.listdir(saved_dir_path):
         if model_name.startswith(pattern1):
             if model_name.endswith(pattern2):
                 target_model_name = model_name
                 break
 
     if target_model_name is None:
-        raise Exception('Target model name not found.')
+        raise Exception('Target model name not found: {}.'.format(saved_dir_path))
 
     saved_model_path = os.path.join(
-        config.save.saved_dir_path,
-        target_model_name,
+        saved_dir_path, target_model_name,
     )
-    return saved_model_path
+
+    print('Loaded model: {}'.format(saved_model_path))
+
+    return saved_model_path, target_model_name[:-4], saved_dir_path
 
 
 def get_gene_symbols(data_path):
@@ -93,31 +103,17 @@ def calc_freq(data, label, threshold):
     return np.array(attributes), p_values
 
 
-def show_top_k_freq_symbols(gene_symbols, attributes, p_values):
-    freq_symbols = pd.DataFrame({
-        'gene_symbols': gene_symbols.values,
-        'attributes': attributes,
-        'p_values': p_values,
-    })
-    scc_symbols = freq_symbols[freq_symbols['attributes'] == 'royalblue']
-    scc_symbols = scc_symbols.sort_values(by=['p_values'])
-    print('scc_symbols: ', scc_symbols)
-    adeno_symbols = freq_symbols[freq_symbols['attributes'] == 'orangered']
-    adeno_symbols = adeno_symbols.sort_values(by=['p_values'])
-    print('adeno_symbols: ', adeno_symbols)
+def main(config, study_name, i, n_splits,
+         NUM=1000,
+         CHECKPOINT_EPOCHS=[1000, 2000, 3000, 4000, 5000]):
 
-
-def main(config, needs_save, study_name, i, n_splits, NUM=1000):
     if config.run.visible_devices:
         os.environ['CUDA_VISIBLE_DEVICES'] = config.run.visible_devices
 
     seed = check_manual_seed(config.run.seed)
     print('Using seed: {}'.format(seed))
 
-    if needs_save:
-        output_dir_path = get_output_dir_path(config.save, study_name)
-
-    train_data_loader, test_data_loader, data_train, label_train = get_k_hold_data_loader(
+    _, _, data_train, label_train = get_k_hold_data_loader(
         config.dataset,
         k=i,
         n_splits=n_splits,
@@ -126,9 +122,6 @@ def main(config, needs_save, study_name, i, n_splits, NUM=1000):
 
     attributes, p_values = calc_freq(data_train, label_train, 0.05)
     gene_symbols = get_gene_symbols(config.dataset.data_path)
-
-    # show_top_k_freq_symbols(gene_symbols, attributes, p_values)
-    # input()
 
     labels = {}
     for g, symbol in enumerate(gene_symbols):
@@ -147,10 +140,10 @@ def main(config, needs_save, study_name, i, n_splits, NUM=1000):
     model.cuda()
     model = nn.DataParallel(model)
 
-    # for checkpoint_epoch in config.save.checkpoint_epochs:
-    for checkpoint_epoch in range(100, 600, 100):
-        saved_model_path = get_saved_model_path(
+    for checkpoint_epoch in CHECKPOINT_EPOCHS:
+        saved_model_path, model_name, saved_dir_path = get_saved_model_path(
             config,
+            study_name,
             checkpoint_epoch,
             i,
             n_splits,
@@ -175,15 +168,12 @@ def main(config, needs_save, study_name, i, n_splits, NUM=1000):
         embedding = embedding.detach().cpu().numpy()
         embedding = embedding[: NUM, :]
 
-
         X_tsne = TSNE(n_components=2, random_state=0).fit_transform(embedding)
         fig, ax = plt.subplots()
         ax.scatter(X_tsne[:, 0], X_tsne[:, 1], s=10., c=attributes)
 
-        # for i in range(NUM):
-        #     ax.annotate(labels[i], (X_tsne[i, 0], X_tsne[i, 1]))
-
-        plt.savefig('tsne_' + str(checkpoint_epoch) + '.png')
+        plt.savefig(os.path.join(saved_dir_path, 'tsne_' + str(model_name) + '.png'))
+        plt.savefig(os.path.join(saved_dir_path, 'tsne_' + str(model_name) + '.eps'))
         plt.clf()
 
         pca = PCA(n_components=2)
@@ -191,46 +181,23 @@ def main(config, needs_save, study_name, i, n_splits, NUM=1000):
         fig, ax = plt.subplots()
         ax.scatter(X_pca[:, 0], X_pca[:, 1], s=10., c=attributes)
 
-        # for i in range(NUM):
-        # #     dist = np.sqrt(np.power(X_pca[i, 0], 2) + np.power(X_pca[i, 1], 2))
-        # #     if dist > 1.0:
-        #     ax.annotate(labels[i], (X_pca[i, 0], X_pca[i, 1]))
-
-        # plt.xlim([-8.0, 8.0])
-        # plt.ylim([-0.2, 1.0])
-        plt.savefig('pca_' + str(checkpoint_epoch) + '.png')
+        plt.savefig(os.path.join(saved_dir_path, 'pca_' + str(model_name) + '.png'))
+        plt.savefig(os.path.join(saved_dir_path, 'pca_' + str(model_name) + '.eps'))
         plt.clf()
-
-        # pca = PCA(n_components=2)
-        # pca.fit_transform(embedding)
-        # axis_1= pca.components_[0]
-        # print('axis_1: ', axis_1.shape)
-        # print('explained_variance_ratio_: ', pca.explained_variance_ratio_)
-        # print('singular_values_: ', pca.singular_values_)
-        #
-        # dot = np.dot(embedding, axis_1)
-        # print('dot: ', dot)
-        # print('dot: ', dot.shape)
-        # print('argsort: ', np.argsort(dot))
-        # for arg in np.argsort(dot):
-        #     print(dot[arg], labels[arg])
-        #     input()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Visualize Mut2Vec')
     parser.add_argument('-c', '--config', help='config file',
                         default='./config/visualize.json')
-    parser.add_argument('-i', '--ith-hold', default=0)
     parser.add_argument('-k', '--kholds', help='number of k-holds', default=5)
-    parser.add_argument('-s', '--save', help='save logs', action='store_true')
     args = parser.parse_args()
 
     config = load_json(args.config)
     study_name = os.path.splitext(os.path.basename(args.config))[0]
-
-    needs_save = args.save
     n_splits = int(args.kholds)
-    i = int(args.ith_hold)
 
-    main(config, needs_save, study_name, i, n_splits)
+    # for i in range(n_splits):
+
+    i = 0
+    main(config, study_name, i, n_splits)

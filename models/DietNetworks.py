@@ -34,7 +34,8 @@ class MLP(nn.Module):
         return y, x_hat
 
     def get_embedding(self):
-        return self.l1.weight.T
+        # return self.l1.weight.T
+        return self.l1.weight.transpose(1, 0)
 
 
 class ModifiedMLP(nn.Module):
@@ -72,8 +73,10 @@ class ModifiedMLP(nn.Module):
         return y, x_hat
 
     def get_embedding(self):
-        W = self.l1.weight.T
-        Ue = self.Ue.T.expand_as(W)
+        # W = self.l1.weight.T
+        # Ue = self.Ue.T.expand_as(W)
+        W = self.l1.weight.transpose(1, 0)
+        Ue = self.Ue.transpose(1, 0).expand_as(W)
         return Ue * W
 
 
@@ -160,7 +163,8 @@ class ModifiedDietNetworks(nn.Module):
 
     def get_embedding(self, x_t):
         We = self.aux_e2(self.dropout(F.relu(self.aux_e1(x_t))))
-        Ue = self.Ue.T.expand_as(We)
+        # Ue = self.Ue.T.expand_as(We)
+        Ue = self.Ue.transpose(1, 0).expand_as(We)
         return Ue * We
 
     def approx(self, x, approx):
