@@ -8,7 +8,7 @@
     "w_reconstruction": 0.1
   },
   "save": {
-    "output_root_dir": "./result_comp3"
+    "output_root_dir": "./result_comp"
   },
   "dataset": {
     "data_path": "./data/data_integration_counts_most_common.csv",

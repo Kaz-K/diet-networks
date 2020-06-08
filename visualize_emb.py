@@ -29,7 +29,7 @@ from utils import load_model
 
 
 def get_saved_model_path(config, study_name, checkpoint_epoch, i, n_splits,
-                         sep='Jun05'):
+                         sep='Jun'):
     saved_root_dir = config.save.output_root_dir
     saved_dir_path = None
     for dir_name in os.listdir(saved_root_dir):
