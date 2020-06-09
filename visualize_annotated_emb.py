@@ -104,8 +104,8 @@ def calc_freq(data, label, threshold):
 
 
 def main(config, study_name, i, n_splits,
-         NUM=5000,
-         CHECKPOINT_EPOCHS=[100, 200, 300, 400, 500, 1000, 2000, 3000, 4000, 5000]):
+         NUM=1000,
+         CHECKPOINT_EPOCHS=[5000]):
 
     if config.run.visible_devices:
         os.environ['CUDA_VISIBLE_DEVICES'] = config.run.visible_devices
@@ -168,21 +168,17 @@ def main(config, study_name, i, n_splits,
         embedding = embedding.detach().cpu().numpy()
         embedding = embedding[: NUM, :]
 
-        X_tsne = TSNE(n_components=2, random_state=0).fit_transform(embedding)
-        fig, ax = plt.subplots()
-        ax.scatter(X_tsne[:, 0], X_tsne[:, 1], s=10., c=attributes)
-
-        plt.savefig(os.path.join(saved_dir_path, 'tsne_' + str(model_name) + '_l.png'))
-        plt.savefig(os.path.join(saved_dir_path, 'tsne_' + str(model_name) + '_l.eps'))
-        plt.clf()
-
         pca = PCA(n_components=2)
         X_pca = PCA(n_components=2).fit_transform(embedding)
         fig, ax = plt.subplots()
         ax.scatter(X_pca[:, 0], X_pca[:, 1], s=10., c=attributes)
 
-        plt.savefig(os.path.join(saved_dir_path, 'pca_' + str(model_name) + '_l.png'))
-        plt.savefig(os.path.join(saved_dir_path, 'pca_' + str(model_name) + '_l.eps'))
+        # for i in range(NUM):
+        # #     dist = np.sqrt(np.power(X_pca[i, 0], 2) + np.power(X_pca[i, 1], 2))
+        # #     if dist > 1.0:
+        #     ax.annotate(labels[i], (X_pca[i, 0], X_pca[i, 1]))
+
+        plt.show()
         plt.clf()
 
 

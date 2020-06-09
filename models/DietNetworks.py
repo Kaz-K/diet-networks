@@ -37,6 +37,12 @@ class MLP(nn.Module):
         # return self.l1.weight.T
         return self.l1.weight.transpose(1, 0)
 
+    def approx(self, x, approx):
+        h_hat = F.relu(torch.matmul(x, approx))
+        y = self.l2(h_hat)
+
+        return y, None
+        
 
 class ModifiedMLP(nn.Module):
 
@@ -79,6 +85,12 @@ class ModifiedMLP(nn.Module):
         Ue = self.Ue.transpose(1, 0).expand_as(W)
         return Ue * W
 
+    def approx(self, x, approx):
+        h_hat = F.relu(torch.matmul(x, approx))
+        y = self.l2(h_hat)
+
+        return y, None
+
 
 class DietNetworks(nn.Module):
 
@@ -119,6 +131,12 @@ class DietNetworks(nn.Module):
     def get_embedding(self, x_t):
         We = self.aux_e2(self.dropout(F.relu(self.aux_e1(x_t))))
         return We
+
+    def approx(self, x, approx):
+        h_hat = F.relu(torch.matmul(x, approx))
+        y = self.l2(h_hat)
+
+        return y, None
 
 
 class ModifiedDietNetworks(nn.Module):
