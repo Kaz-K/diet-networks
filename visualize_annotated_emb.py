@@ -104,8 +104,8 @@ def calc_freq(data, label, threshold):
 
 
 def main(config, study_name, i, n_splits,
-         NUM=1000,
-         CHECKPOINT_EPOCHS=[5000]):
+         NUM=None,
+         CHECKPOINT_EPOCHS=[500]):
 
     if config.run.visible_devices:
         os.environ['CUDA_VISIBLE_DEVICES'] = config.run.visible_devices
@@ -122,6 +122,9 @@ def main(config, study_name, i, n_splits,
 
     attributes, p_values = calc_freq(data_train, label_train, 0.05)
     gene_symbols = get_gene_symbols(config.dataset.data_path)
+
+    if NUM is None:
+        NUM = len(gene_symbols)
 
     labels = {}
     for g, symbol in enumerate(gene_symbols):
@@ -168,18 +171,28 @@ def main(config, study_name, i, n_splits,
         embedding = embedding.detach().cpu().numpy()
         embedding = embedding[: NUM, :]
 
-        pca = PCA(n_components=2)
-        X_pca = PCA(n_components=2).fit_transform(embedding)
-        fig, ax = plt.subplots()
-        ax.scatter(X_pca[:, 0], X_pca[:, 1], s=10., c=attributes)
+        X_pca = PCA(n_components=2)
+        X_pca.fit_transform(embedding)
+        # fig, ax = plt.subplots()
+        # ax.scatter(X_pca[:, 0], X_pca[:, 1], s=10., c=attributes)
+        #
+        # # for i in range(NUM):
+        # # #     dist = np.sqrt(np.power(X_pca[i, 0], 2) + np.power(X_pca[i, 1], 2))
+        # # #     if dist > 1.0:
+        # #     ax.annotate(labels[i], (X_pca[i, 0], X_pca[i, 1]))
+        #
+        # plt.show()
+        # plt.clf()
 
-        # for i in range(NUM):
-        # #     dist = np.sqrt(np.power(X_pca[i, 0], 2) + np.power(X_pca[i, 1], 2))
-        # #     if dist > 1.0:
-        #     ax.annotate(labels[i], (X_pca[i, 0], X_pca[i, 1]))
+        axis_1= X_pca.components_[0]
+        score_1 = np.dot(embedding, axis_1)
+        axis_2= X_pca.components_[1]
+        score_2 = np.dot(embedding, axis_2)
 
-        plt.show()
-        plt.clf()
+        for arg in np.argsort(score_2)[::-1]:
+            print(score_2[arg], labels[arg])
+            input()
+
 
 
 if __name__ == '__main__':

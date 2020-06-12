@@ -31,6 +31,10 @@ from utils import save_logs
 from utils import save_models
 
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
 def calc_metrics(out, y):
     y_pred = torch.argmax(out, dim=1).detach().cpu().numpy()
     y_true = y.cpu().numpy()
@@ -67,6 +71,8 @@ def main(config, needs_save, study_name, k, n_splits):
     model.cuda()
     model = nn.DataParallel(model)
 
+    print('count params: ', count_parameters(model.module))
+
     saved_model_path, _, _ = get_saved_model_path(
         config,
         study_name,
@@ -96,19 +102,22 @@ def main(config, needs_save, study_name, k, n_splits):
     emb_pca.fit_transform(embedding)
 
     if config.run.decomp == '1D':
+        print('Approximate by 1D PCA')
         axis_1= torch.from_numpy(emb_pca.components_[0])
         score_1 = np.dot(embedding, axis_1)
         approx = np.outer(score_1, axis_1)
 
     elif config.run.decomp == '2D':
+        print('Approximate by 2D PCA')
         axis_1= torch.from_numpy(emb_pca.components_[0])
         score_1 = np.dot(embedding, axis_1)
         axis_2= torch.from_numpy(emb_pca.components_[1])
         score_2 = np.dot(embedding, axis_2)
         approx = np.outer(score_1, axis_1) + np.outer(score_2, axis_2)
+        # approx = np.outer(score_2, axis_2)
 
     approx = torch.from_numpy(approx).float().cuda(non_blocking=True)
-    
+
     criterion = nn.CrossEntropyLoss()
 
     def inference(engine, batch):
@@ -154,7 +163,12 @@ def main(config, needs_save, study_name, k, n_splits):
     values = [str(k), str(n_splits), str(evaluator.state.epoch), str(evaluator.state.iteration)] \
            + [str(value) for value in evaluator.state.metrics.values()]
 
-    return {c: v for (c, v) in zip(columns, values)}
+    values = {c: v for (c, v) in zip(columns, values)}
+    values.update({
+        'variance_ratio_1': emb_pca.explained_variance_ratio_[0],
+        'variance_ratio_2': emb_pca.explained_variance_ratio_[1],
+    })
+    return values
 
 
 if __name__ == '__main__':
@@ -171,6 +185,8 @@ if __name__ == '__main__':
     n_splits = int(args.kholds)
 
     accuracy_list = []
+    variance_ratio_1 = []
+    variance_ratio_2 = []
 
     for i in range(n_splits):
         logs = main(config,
@@ -180,8 +196,25 @@ if __name__ == '__main__':
                     n_splits=n_splits)
 
         accuracy_list.append(float(logs['accuracy']))
+        variance_ratio_1.append(float(logs['variance_ratio_1']))
+        variance_ratio_2.append(float(logs['variance_ratio_2']))
 
     accuracy_list = np.array(accuracy_list)
 
-    print('mean: ', np.mean(accuracy_list))
-    print('std: ', np.std(accuracy_list))
+    print('acc mean: ', np.mean(accuracy_list))
+    print('acc std: ', np.std(accuracy_list))
+
+    variance_ratio_1 = np.array(variance_ratio_1)
+
+    print('v1 mean: ', np.mean(variance_ratio_1))
+    print('v1 std: ', np.std(variance_ratio_1))
+
+    variance_ratio_2 = np.array(variance_ratio_2)
+
+    print('v2 mean: ', np.mean(variance_ratio_2))
+    print('v2 std: ', np.std(variance_ratio_2))
+
+    sum_variance_ratio = variance_ratio_1 + variance_ratio_2
+
+    print('sum mean: ', np.mean(sum_variance_ratio))
+    print('sum std: ', np.std(sum_variance_ratio))

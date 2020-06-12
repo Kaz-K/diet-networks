@@ -41,7 +41,7 @@ def get_saved_model_path(config, study_name, checkpoint_epoch, i, n_splits,
 
     assert saved_dir_path is not None
 
-    pattern1 = 'epoch_' + str(checkpoint_epoch)
+    pattern1 = 'epoch_' + str(checkpoint_epoch) + '_'
     pattern2 = '_' + str(i) + '_' + str(n_splits) + '.pth'
 
     target_model_name = None
@@ -104,8 +104,8 @@ def calc_freq(data, label, threshold):
 
 
 def main(config, study_name, i, n_splits,
-         NUM=5000,
-         CHECKPOINT_EPOCHS=[100, 200, 300, 400, 500, 1000, 2000, 3000, 4000, 5000]):
+         NUM=1000,
+         CHECKPOINT_EPOCHS=[500]):
 
     if config.run.visible_devices:
         os.environ['CUDA_VISIBLE_DEVICES'] = config.run.visible_devices
@@ -172,8 +172,9 @@ def main(config, study_name, i, n_splits,
         fig, ax = plt.subplots()
         ax.scatter(X_tsne[:, 0], X_tsne[:, 1], s=10., c=attributes)
 
-        plt.savefig(os.path.join(saved_dir_path, 'tsne_' + str(model_name) + '_l.png'))
-        plt.savefig(os.path.join(saved_dir_path, 'tsne_' + str(model_name) + '_l.eps'))
+        # plt.savefig(os.path.join(saved_dir_path, 'tsne_' + str(model_name) + '.png'))
+        # plt.savefig(os.path.join(saved_dir_path, 'tsne_' + str(model_name) + '.eps'))
+        plt.show()
         plt.clf()
 
         pca = PCA(n_components=2)
@@ -181,8 +182,9 @@ def main(config, study_name, i, n_splits,
         fig, ax = plt.subplots()
         ax.scatter(X_pca[:, 0], X_pca[:, 1], s=10., c=attributes)
 
-        plt.savefig(os.path.join(saved_dir_path, 'pca_' + str(model_name) + '_l.png'))
-        plt.savefig(os.path.join(saved_dir_path, 'pca_' + str(model_name) + '_l.eps'))
+        # plt.savefig(os.path.join(saved_dir_path, 'pca_' + str(model_name) + '.png'))
+        # plt.savefig(os.path.join(saved_dir_path, 'pca_' + str(model_name) + '.eps'))
+        plt.show()
         plt.clf()
 
 

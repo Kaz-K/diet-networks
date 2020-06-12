@@ -4,8 +4,8 @@
     "decomp": "2D",
     "visible_devices": "0",
     "transposed_matrix": "overall",
-    "w_feature_selection": 0.001,
-    "w_reconstruction": 0.001
+    "w_feature_selection": false,
+    "w_reconstruction": 0.1
   },
   "save": {
     "output_root_dir": "./result_comp"
@@ -17,12 +17,10 @@
     "random_state": 1,
     "batch_size": 100,
     "num_workers": 1,
-    "data_size": 950,
-    "k_hold": 0,
-    "n_split": 5
+    "data_size": 950
   },
   "model": {
-    "model_name": "ModifiedDietNetworks",
+    "model_name": "DietNetworks",
     "input_size": 17961,
     "hidden_size": 128,
     "output_size": 2,
@@ -30,6 +28,6 @@
     "embedding_size": 256,
     "use_dropout": false,
     "use_reconstruction": true,
-    "checkpoint_epoch": 5000
+    "checkpoint_epoch": 500
   }
 }
