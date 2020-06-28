@@ -2,3 +2,9 @@ __pycache__
 /result*
 /dietnet_results
 __old__
+approx_pca.py
+plot_result.py
+training_summary.py
+visualize_annotated_emb.py
+visualize_emb.py
+/config/approx
